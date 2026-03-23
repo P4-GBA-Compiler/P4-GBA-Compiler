@@ -1,12 +1,12 @@
 # Make grid
-a = (3,3)
+grid a = (3,3)
 
-
-
+a[0,0] = 'x'
 # The tiles that compose a:
-# [0,0, K] [0,1, K] [0,2, K]
-# [1,0, K] [1,1, K] [1,2, K]
-# [2,0, K] [2,1, K] [2,2, K]
+# [x] [] []
+# [] [] []
+# [] [] []
+
 
 # Main
 def Main(): 
@@ -28,8 +28,8 @@ Playerwon():
             PlayGame()
 
 PlayGame():
-    CurrentPosition = [0,0]
+    CurrentPosition = a[0,0]
     MoveCursor(x,y)
-    DrawObject(CurrentSymbol[0], currentPosition)
+    DrawObject(CurrentSymbol[0], CurrentPosition)
     list(reverse(CurrentSymbol))
     Playerwon()
