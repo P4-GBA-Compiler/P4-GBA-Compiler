@@ -1,35 +1,35 @@
+def Turn(symbol):
+    selecting = True
+    while selecting:
+        if InputLeft(): #The 'Input' functions return 'True' if the corresponding button is pressed. Otherwise they return 'False'.
+            MoveLeft() #The 'Move' functions move the selected tile. This only works if a grid has been created.
+                       #The starting position will be [0,0] in the grid. 
+        elif InputRight():
+            MoveRight()
+
+        elif InputUp():
+            MoveUp()
+
+        elif InputDown():
+            MoveDown()
+
+        elif InputA():
+            Draw(symbol) #Draws the character 'x' or 'o' on the currently selected tile.
+            selecting = False
+
+    if symbol == 'x':
+        Turn('o')
+    else:
+        Turn('x')
+
 # Make grid
-grid a = (3,3)
-
-a[0,0] = 'x'
-# The tiles that compose a:
-# [x] [] []
+grid a = (3,3) #This should be enough to render a grid with a predetermined background color.
+#The grid has the layout of a matrix. As a is 3x3 it is initialised as:
+# [] [] []
 # [] [] []
 # [] [] []
 
+Turn('x')
 
-# Main
-def Main(): 
-    CurrentSymbol = [x,o]
-    PlayGame()
-     # Where x and y are coordinates of a: a[x,y]
+        
 
-Playerwon():
-    match won:
-        case [0,0, x], [0,1, x], [0,2, x] | [1,0, x], [1,1, x], [1,2, x] | [2,0] [2,1] [2,2] | [0,0] [1,1] [2,2] |[0,2] [1,1] [2,0] |[0,0] [1,0] [2,0] |[0,1] [1,1] [2,1] | [0,2] [1,2] [2,2]:
-            print("Player x wins")
-    
-        case [0,0 o], [0,1, o], [0,2, o] | [1,0, o], [1,1, o], [1,2, o] | [2,0, o] [2,1, o] [2,2, o] | [0,0] [1,1] [2,2] |[0,2] [1,1] [2,0] |[0,0] [1,0] [2,0] |[0,1] [1,1] [2,1] | [0,2] [1,2] [2,2]:
-            print("Player o wins")
-
-        case [0,0, x|o], [0,1, x|o], [0,2, x|o], [1,0, x|o], [1,1, x|o], [1,2, x|o] & [2,0, x|o], [2,1, x|o], [2,2, x|o]
-            print("Tied")
-        case _:
-            PlayGame()
-
-PlayGame():
-    CurrentPosition = a[0,0]
-    MoveCursor(x,y)
-    DrawObject(CurrentSymbol[0], CurrentPosition)
-    list(reverse(CurrentSymbol))
-    Playerwon()
