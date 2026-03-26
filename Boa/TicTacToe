@@ -30,6 +30,3 @@ grid a = (3,3) #This should be enough to render a grid with a predetermined back
 # [] [] []
 
 Turn('x')
-
-        
-
