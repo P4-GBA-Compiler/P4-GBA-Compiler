@@ -23,7 +23,7 @@ type value =
   | Vint of int
   | Vstring of string
   | Vlist of value array
-  | Vgrid of value array array
+  | Vgrid of value array array (* added by DB 2D for rows/columns *)
 
 (* Print a value on standard output *)
 let rec print_value = function
