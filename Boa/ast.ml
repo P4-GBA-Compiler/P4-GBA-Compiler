@@ -23,7 +23,6 @@ type constant =
   | Cchar of char
   | Cstring of string
   | Cint of int32
-  | 
 
 type expr =
   | Ecst of constant
@@ -33,6 +32,7 @@ type expr =
   | Ecall of ident * expr list
   | Elist of expr list (* [e1,e2,...] *)
   | Eget of expr * expr (* e1[e2] *)
+  | Eget2 of expr * expr * expr 
   | Egrid of expr list 
 
 and stmt =
@@ -44,6 +44,7 @@ and stmt =
   | Sfor of ident * expr * stmt
   | Seval of expr
   | Sset of expr * expr * expr (* e1[e2] = e3 *)
+  | Sset2 of expr * expr * expr * expr (* added by DB for a[r,c] = val on grids *)
 
 and def = ident * ident list * stmt
 

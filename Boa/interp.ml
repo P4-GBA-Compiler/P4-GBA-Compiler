@@ -23,7 +23,7 @@ type value =
   | Vint of int
   | Vstring of string
   | Vlist of value array
-  | Vgrid of value array
+  | Vgrid of value array array
 
 (* Print a value on standard output *)
 let rec print_value = function
@@ -37,6 +37,21 @@ let rec print_value = function
     printf "[";
     for i = 0 to n-1 do print_value a.(i); if i < n-1 then printf ", " done;
     printf "]"
+  | Vgrid g ->
+    let n = Array.length g in
+    printf "[";
+    for i = 0 to n-1 do
+      let row = g.(i) in
+      let m = Array.length row in
+      printf "[";
+      for j = 0 to m-1 do
+        print_value row.(j);
+        if j < m-1 then printf ", "
+      done;
+      printf "]";
+      if i < n-1 then printf ", "
+    done;
+    printf "]"  
 
 (* Boolean interpretation of a value
 
@@ -50,6 +65,8 @@ let is_false = function
   | Vstring ""
   | Vlist [||] -> true
   | Vint n -> n = 0
+  | Vgrid g -> 
+      Array.length g = 0 || (Array.length g > 0 && Array.length g.(0) = 0)
   | _ -> false (*DONE (question 2)*)
 
 let is_true v = not (is_false v) (* DONE (question 2) *)
@@ -95,82 +112,104 @@ let rec compare_value v1 v2 = match v1, v2 with
     compare_list a1 (Array.length a1) a2 (Array.length a2) 0
   | _ -> compare v1 v2
 
-let rec expr ctx = function
+and expr_int ctx e = match expr ctx e with
+  | Vbool false -> 0
+  | Vbool true -> 1
+  | Vint n -> n
+  | _ -> error "integer expected"
+
+and expr ctx = function     (* changed from 'let rec expr' to 'and expr' *)
   | Ecst Cnone ->
       Vnone
   | Ecst (Cstring s) ->
       Vstring s
   (* arithmetic *)
   | Ecst (Cint n) ->
-      Vint (Int32.to_int n) (* DONE (question 1) *)
+      Vint (Int32.to_int n)
   | Ebinop (Badd | Bsub | Bmul | Bdiv | Bmod |
             Beq | Bneq | Blt | Ble | Bgt | Bge as op, e1, e2) ->
       let v1 = expr ctx e1 in
       let v2 = expr ctx e2 in
       begin match op, v1, v2 with
-        | Badd, Vint n1, Vint n2 -> Vint (n1+n2) (* DONE (question 1) *)
-        | Bsub, Vint n1, Vint n2 -> Vint (n1-n2) (* DONE (question 1) *)
-        | Bmul, Vint n1, Vint n2 -> Vint (n1*n2) (* DONE (question 1) *)
-        | (Bdiv | Bmod), Vint _, Vint 0 -> error "division by zero" (* DONE (question 1) *)
-        | Bdiv, Vint n1, Vint n2 -> Vint (n1/n2) (* DONE (question 1) *)
-        | Bmod, Vint n1, Vint n2 -> Vint (n1 mod n2) (* DONE (question 1) *)
-        | Beq, _, _  -> Vbool ((compare_value v1 v2) = 0)  (* DONE (question 2) *)
-        | Bneq, _, _ -> Vbool ((compare_value v1 v2) <> 0) (* DONE (question 2) *)
-        | Blt, _, _  -> Vbool ((compare_value v1 v2) < 0)  (* DONE (question 2) *)
-        | Ble, _, _  -> Vbool ((compare_value v1 v2) <= 0) (* DONE (question 2) *)
-        | Bgt, _, _  -> Vbool ((compare_value v1 v2) > 0)  (* DONE (question 2) *)
-        | Bge, _, _  -> Vbool ((compare_value v1 v2) >= 0) (* DONE (question 2) *)
-        | Badd, Vstring s1, Vstring s2 ->
-            Vstring (s1 ^ s2) (* DONE (question 3) *)
-        | Badd, Vlist l1, Vlist l2 -> Vlist (Array.append l1 l2) (* DONE (question 5) *)
+        | Badd, Vint n1, Vint n2 -> Vint (n1+n2)
+        | Bsub, Vint n1, Vint n2 -> Vint (n1-n2)
+        | Bmul, Vint n1, Vint n2 -> Vint (n1*n2)
+        | (Bdiv | Bmod), Vint _, Vint 0 -> error "division by zero"
+        | Bdiv, Vint n1, Vint n2 -> Vint (n1/n2)
+        | Bmod, Vint n1, Vint n2 -> Vint (n1 mod n2)
+        | Beq, _, _  -> Vbool ((compare_value v1 v2) = 0)
+        | Bneq, _, _ -> Vbool ((compare_value v1 v2) <> 0)
+        | Blt, _, _  -> Vbool ((compare_value v1 v2) < 0)
+        | Ble, _, _  -> Vbool ((compare_value v1 v2) <= 0)
+        | Bgt, _, _  -> Vbool ((compare_value v1 v2) > 0)
+        | Bge, _, _  -> Vbool ((compare_value v1 v2) >= 0)
+        | Badd, Vstring s1, Vstring s2 -> Vstring (s1 ^ s2)
+        | Badd, Vlist l1, Vlist l2 -> Vlist (Array.append l1 l2)
         | _ -> error "unsupported operand types"
       end
   | Eunop (Uneg, e1) ->
        begin match expr ctx e1 with
         | Vint n -> Vint (-n)
-        | _ -> error "unsupported operand types" end (* DONE (question 1) *)
+        | _ -> error "unsupported operand types" end
   (* Boolean *)
-  | Ecst (Cbool b) -> Vbool b (* DONE (question 2) *)
+  | Ecst (Cbool b) -> Vbool b
   | Ebinop (Band, e1, e2) ->
     let v1 = expr ctx e1 in
-    if is_true v1 then expr ctx e2 else v1 (* DONE (question 2) *)
+    if is_true v1 then expr ctx e2 else v1
   | Ebinop (Bor, e1, e2) ->
     let v1 = expr ctx e1 in
-    if is_false v1 then expr ctx e2 else v1 (* DONE (question 2) *)
-  | Eunop (Unot, e1) -> Vbool (is_false (expr ctx e1)) (* DONE (question 2) *)
+    if is_false v1 then expr ctx e2 else v1
+  | Eunop (Unot, e1) -> Vbool (is_false (expr ctx e1))
   | Eident {id} ->
          if not (Hashtbl.mem ctx id) then error "unbound variable";
-         Hashtbl.find ctx id (* DONE (question 3) *)
+         Hashtbl.find ctx id
   (* function call *)
   | Ecall ({id="len"}, [e1]) ->
     begin match expr ctx e1 with
         | Vstring s -> Vint (String.length s)
         | Vlist l -> Vint (Array.length l)
-        | _ -> error "this value has no 'len'" end (* DONE (question 5) *)
+        | _ -> error "this value has no 'len'" end
   | Ecall ({id="list"}, [Ecall ({id="range"}, [e1])]) ->
       let n = expr_int ctx e1 in
-      Vlist (Array.init (max 0 n) (fun i -> Vint i)) (* DONE (question 5) *)
+      Vlist (Array.init (max 0 n) (fun i -> Vint i))
   | Ecall ({id=f}, el) ->
       if not (Hashtbl.mem functions f) then error ("unbound function " ^ f);
       let args, body = Hashtbl.find functions f in
       if List.length args <> List.length el then error "bad arity";
       let ctx' = Hashtbl.create 16 in
       List.iter2 (fun {id=x} e -> Hashtbl.add ctx' x (expr ctx e)) args el;
-      begin try stmt ctx' body; Vnone with Return v -> v end (* DONE (question 4) *)
+      begin try stmt ctx' body; Vnone with Return v -> v end
   | Elist el ->
-      Vlist (Array.of_list (List.map (expr ctx) el))   (* DONE (question 5) *)
+      Vlist (Array.of_list (List.map (expr ctx) el))
   | Eget (e1, e2) ->
-          begin match expr ctx e1 with
+      begin match expr ctx e1 with
       | Vlist l ->
           let i = expr_int ctx e2 in
           (try l.(i) with Invalid_argument _ -> error "index out of bounds")
-      | _ -> error "list expected" end (* DONE (question 5) *)
+      | _ -> error "list expected" 
+      end
+      (* Grid *)
+  | Egrid el ->
+      begin match el with
+      | [er; ec] ->
+        let rows = expr_int ctx er in
+        let cols = expr_int ctx ec in
+        if rows <= 0 || cols <= 0 then error "grid dimensions must be positive";
+        Vgrid (Array.init rows (fun _ -> Array.make cols Vnone))
+      | _ -> error "grid constructor expects two dimensions (rows, cols)"
+      end 
+      (* get2 gets the grid *)
+  | Eget2 (e_base, e_r, e_c) ->
+      begin match expr ctx e_base with
+      | Vgrid g -> 
+          let r = expr_int ctx e_r in
+          let c = expr_int ctx e_c in
+          (try g.(r).(c)
+           with Invalid_argument _ -> error "index out of bounds")
+      | _ -> error "grid expected"
+      end
 
-and expr_int ctx e = match expr ctx e with
-  | Vbool false -> 0
-  | Vbool true -> 1
-  | Vint n -> n
-  | _ -> error "integer expected"
+
 
 (* Interpreting a statement
 
@@ -197,8 +236,19 @@ and stmt ctx = function
   | Sset (e1, e2, e3) ->
         begin match expr ctx e1 with
       | Vlist l -> l.(expr_int ctx e2) <- expr ctx e3
-      | _ -> error "list expected" end (* DONE (question 5) *)
-
+      | _ -> error "list expected" 
+      end (* DONE (question 5) *)
+  | Sset2 (e_base, e_r, e_c, e_val) ->
+      begin match expr ctx e_base with
+      | Vgrid g ->
+          let r = expr_int ctx e_r in
+          let c = expr_int ctx e_c in
+          (try g.(r).(c) <- expr ctx e_val
+           with Invalid_argument _ -> error "index out of bounds")
+      | _ -> error "grid expected"    
+      end
+      
+      
 (* Interpreting a block (a sequence of statements) *)
 
 and block ctx = function
