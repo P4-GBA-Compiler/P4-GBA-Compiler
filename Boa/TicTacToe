@@ -1,9 +1,10 @@
 def Turn(symbol):
     selecting = True
     while selecting:
-        if InputLeft(): #The 'Input' functions return 'True' if the corresponding button is pressed. Otherwise they return 'False'.
-            MoveLeft() #The 'Move' functions move the selected tile. This only works if a grid has been created.
-                       #The starting position will be [0,0] in the grid. 
+        if InputLeft():  # The 'Input' functions return 'True' if the corresponding button is pressed. Otherwise they return 'False'.
+            # The 'Move' functions move the selected tile. This only works if a grid has been created.
+            MoveLeft()
+            # The starting position will be [0,0] in the grid.
         elif InputRight():
             MoveRight()
 
@@ -14,7 +15,8 @@ def Turn(symbol):
             MoveDown()
 
         elif InputA():
-            Draw(symbol) #Draws the character 'x' or 'o' on the currently selected tile.
+            # Draws the character 'x' or 'o' on the currently selected tile.
+            Draw(symbol)
             selecting = False
 
     if symbol == 'x':
@@ -22,9 +24,11 @@ def Turn(symbol):
     else:
         Turn('x')
 
+
 # Make grid
-grid a = (3,3) #This should be enough to render a grid with a predetermined background color.
-#The grid has the layout of a matrix. As a is 3x3 it is initialised as:
+# This should be enough to render a grid with a predetermined background color.
+grid a = (3, 3)
+# The grid has the layout of a matrix. As a is 3x3 it is initialised as:
 # [] [] []
 # [] [] []
 # [] [] []
