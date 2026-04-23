@@ -45,6 +45,7 @@ and stmt =
   | Seval of expr
   | Sset of expr * expr * expr (* e1[e2] = e3 *)
   | Sset2 of expr * expr * expr * expr (* added by DB for a[r,c] = val on grids *)
+  | Swhile of expr * stmt (*added While *)
 
 and def = ident * ident list * stmt
 

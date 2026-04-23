@@ -224,6 +224,11 @@ and stmt ctx = function
       block ctx bl
   | Sif (e, s1, s2) ->
         if is_true (expr ctx e) then stmt ctx s1 else stmt ctx s2 (* DONE (question 2) *)
+
+  | Swhile (e, s) ->
+    while is_true (expr ctx e) do
+      stmt ctx s 
+    done
   | Sassign ({id}, e1) ->
          Hashtbl.replace ctx id (expr ctx e1) (* DONE (question 3) *)
   | Sreturn e ->

@@ -7,13 +7,15 @@
 %token <Ast.constant> CST
 %token <Ast.binop> CMP
 %token <string> IDENT
-%token DEF IF ELSE RETURN PRINT FOR IN AND OR NOT
+%token DEF IF ELSE ELIF RETURN PRINT FOR IN AND OR NOT
 %token EOF
 %token LP RP LSQ RSQ COMMA EQUAL COLON BEGIN END NEWLINE
 %token PLUS MINUS TIMES DIV MOD
 
 /* New token for "grid" keyword */
 %token GRID
+/* new token added for "while" keyword*/
+%token WHILE
 
 /* priorities and associativities */
 %left OR
@@ -74,14 +76,33 @@ suite:
 ;
 
 stmt:
+// | s = simple_stmt NEWLINE
+//     { s }
+// | IF c = expr COLON s = suite
+//     { Sif (c, s, Sblock []) }
+// | IF c = expr COLON s1 = suite ELSE COLON s2 = suite
+//     { Sif (c, s1, s2) }
+
 | s = simple_stmt NEWLINE
     { s }
-| IF c = expr COLON s = suite
-    { Sif (c, s, Sblock []) }
-| IF c = expr COLON s1 = suite ELSE COLON s2 = suite
-    { Sif (c, s1, s2) }
+| IF c = expr COLON s1 = suite rest = elif_chain
+    { Sif (c, s1, rest) }
+
 | FOR x = ident IN e = expr COLON s = suite
     { Sfor (x, e, s) }
+
+| WHILE c = expr COLON s = suite
+    { Swhile (c, s) }
+;
+
+// made elif chain to loop the number of elif you would make
+elif_chain:
+| ELSE COLON s = suite
+    { s }
+| ELIF c = expr COLON s = suite rest = elif_chain
+    { Sif (c, s, rest) }
+| /* empty */
+    { Sblock [] }
 ;
 
 simple_stmt:

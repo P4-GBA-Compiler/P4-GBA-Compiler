@@ -11,7 +11,7 @@
   let id_or_kwd = (*this where we define keywords to our lexer DB*)
     let h = Hashtbl.create 32 in
     List.iter (fun (s, tok) -> Hashtbl.add h s tok)
-      ["def", DEF; "if", IF; "else", ELSE;
+      ["def", DEF; "if", IF; "else", ELSE; "elif", ELIF;
        "return", RETURN; "print", PRINT;
        "for", FOR; "in", IN;
        "and", AND; "or", OR; "not", NOT;
@@ -19,6 +19,7 @@
        "False", CST (Cbool false);
        "None", CST Cnone;
        "grid", GRID; (*new added grid token by DB*)
+       "while", WHILE;
        ];
    fun s -> try Hashtbl.find h s with Not_found -> IDENT s
 

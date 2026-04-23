@@ -19,10 +19,10 @@ def Turn(symbol):
             Draw(symbol)
             selecting = False
 
-    if symbol == 'x':
-        Turn('o')
+    if symbol == "x":
+        Turn("o")
     else:
-        Turn('x')
+        Turn("x")
 
 
 # Make grid
@@ -33,4 +33,5 @@ grid a = (3, 3)
 # [] [] []
 # [] [] []
 
-Turn('x')
+Turn("x")
+
