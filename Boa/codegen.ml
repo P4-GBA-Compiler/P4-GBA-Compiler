@@ -37,3 +37,9 @@ let compile_instr (i : Ast.stmt): Mips.text =
     nop (* TODO 2 *)
   | Print e ->
     nop (* TODO 2 *)
+
+
+(* We need a function with the following syntax:
+ let codegen_file (ast) output_file = .....
+ This function is called in main.ml.
+ Use the function "open_out output_file" to create the outputfile and open it. *)

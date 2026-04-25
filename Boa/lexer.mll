@@ -1,5 +1,4 @@
-
-(* Lexical analyzer for Mini-Python *)
+(* Lexical analyzer for Boa *)
 
 {
   open Lexing
