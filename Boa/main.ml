@@ -3,6 +3,7 @@ open Lexing
 (* To use the compiler you input the following on the command line:
 ocamlc -o compiler ast.ml lexer.ml parser.ml codegen.ml main.ml
 compiler.exe input.boa output.asm
+./compiler input.boa output.asm (for mac)
 "compiler" is just the name of the file, it can be anything. *)
 
 
