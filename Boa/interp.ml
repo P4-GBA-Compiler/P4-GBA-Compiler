@@ -179,6 +179,14 @@ and expr ctx = function     (* changed from 'let rec expr' to 'and expr' *)
       let ctx' = Hashtbl.create 16 in
       List.iter2 (fun {id=x} e -> Hashtbl.add ctx' x (expr ctx e)) args el;
       begin try stmt ctx' body; Vnone with Return v -> v end
+  | Ecall (f, []) ->
+    match f.id with
+    | "InputLeft"  -> Vbool (get_input () = InLeft)
+    | "InputRight" -> Vbool (get_input () = InRight)
+    | "InputUp"    -> Vbool (get_input () = InUp)
+    | "InputDown"  -> Vbool (get_input () = InDown)
+    | "InputA"     -> Vbool (get_input () = InA)
+    | _ -> error "no arguments expected"
   | Elist el ->
       Vlist (Array.of_list (List.map (expr ctx) el))
   | Eget (e1, e2) ->

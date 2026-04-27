@@ -76,6 +76,11 @@ rule next_tokens = parse
   | '"'     { [CST (Cstring (string lexbuf))] }
   | eof     { NEWLINE :: unindent 0 @ [EOF] }
   | _ as c  { raise (Lexing_error ("illegal character: " ^ String.make 1 c)) }
+  | "InputLeft"  { INPUTLEFT }
+  | "InputRight" { INPUTRIGHT }
+  | "InputUp"    { INPUTUP }
+  | "InputDown"  { INPUTDOWN }
+  | "InputA"     { INPUTA }
 
 and indentation = parse
   | (space | comment)* '\n'

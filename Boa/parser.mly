@@ -11,6 +11,7 @@
 %token EOF
 %token LP RP LSQ RSQ COMMA EQUAL COLON BEGIN END NEWLINE
 %token PLUS MINUS TIMES DIV MOD
+%token INPUTUP INPUTDOWN INPUTRIGHT INPUTLEFT INPUTA
 
 /* New token for "grid" keyword */
 %token GRID
@@ -66,6 +67,18 @@ expr:
     { Egrid [r; c] }
 | LP e = expr RP
     { e }
+
+    /*input Tokens*/
+| INPUTLEFT LP RP   
+    { Ecall ({id="InputLeft"; loc=($startpos,$endpos)}, []) }
+| INPUTRIGHT LP RP  
+    { Ecall ({id="InputRight"; loc=($startpos,$endpos)}, []) }
+| INPUTUP LP RP     
+    { Ecall ({id="InputUp"; loc=($startpos,$endpos)}, []) }
+| INPUTDOWN LP RP   
+    { Ecall ({id="InputDown"; loc=($startpos,$endpos)}, []) }
+| INPUTA LP RP      
+    { Ecall ({id="InputA"; loc=($startpos,$endpos)}, []) } 
 ;
 
 suite:
