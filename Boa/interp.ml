@@ -186,6 +186,7 @@ and expr ctx = function     (* changed from 'let rec expr' to 'and expr' *)
     | "InputUp"    -> Vbool (get_input () = InUp)
     | "InputDown"  -> Vbool (get_input () = InDown)
     | "InputA"     -> Vbool (get_input () = InA)
+    | "Draw" -> ".include asm..."
     | _ -> error "no arguments expected"
   | Elist el ->
       Vlist (Array.of_list (List.map (expr ctx) el))
