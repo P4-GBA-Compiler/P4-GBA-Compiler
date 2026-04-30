@@ -19,6 +19,11 @@
        "None", CST Cnone;
        "grid", GRID; (*new added grid token by DB*)
        "while", WHILE;
+       "InputLeft", INPUTLEFT;
+       "InputRight", INPUTRIGHT;
+       "InputUp", INPUTUP;
+       "InputDown", INPUTDOWN;
+       "InputA", INPUTA;
        ];
    fun s -> try Hashtbl.find h s with Not_found -> IDENT s
 
@@ -71,16 +76,11 @@ rule next_tokens = parse
   | ','     { [COMMA] }
   | ':'     { [COLON] }
   | integer as s
-            { try [CST (Cint (Int64.of_string s))]
+            { try [CST (Cint (Int32.of_string s))]
               with _ -> raise (Lexing_error ("constant too large: " ^ s)) }
   | '"'     { [CST (Cstring (string lexbuf))] }
   | eof     { NEWLINE :: unindent 0 @ [EOF] }
   | _ as c  { raise (Lexing_error ("illegal character: " ^ String.make 1 c)) }
-  | "InputLeft"  { INPUTLEFT }
-  | "InputRight" { INPUTRIGHT }
-  | "InputUp"    { INPUTUP }
-  | "InputDown"  { INPUTDOWN }
-  | "InputA"     { INPUTA }
 
 and indentation = parse
   | (space | comment)* '\n'
