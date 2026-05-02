@@ -33,7 +33,7 @@ type expr =
   | Elist of expr list (* [e1,e2,...] *)
   | Eget of expr * expr (* e1[e2] *)
   | Eget2 of expr * expr * expr 
-  | Egrid of expr list 
+  | Egrid of expr list (* maybe change to two Cint? *)
 
 and stmt =
   | Sif of expr * stmt * stmt

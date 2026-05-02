@@ -51,7 +51,7 @@ let () =
    (* Here we use the Lexing_error function to catch invalid characters *)
   | Lexer.Lexing_error msg -> 
       Printf.eprintf "Lexical error: %s\n" msg; exit 1
-   (* Here we use the Lexing_error function to catch invalid characters *)
+   (* Here we use the regular error function to catch invalid characters *)
   | Parser.Error ->
       Printf.eprintf "Parse error at %s\n" 
         (string_of_int lexbuf.lex_curr_p.pos_cnum);

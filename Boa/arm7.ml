@@ -58,9 +58,17 @@ let pr_alist fmt l =
 
 (* End of Leon's code *)
 
-let add a b c = ins "add %s, %s, #%a" a b c
-let mov a b = ins "mov %s, #%a" a b
+let (++) expr1 expr2 = Cat(expr1, expr2)
 
-let (++) x y = Cat (x, y)
+(* Assembly instructions *)
+let add dest val1 val2 = ins "add %s, %s, %s" dest val1 val2
+let sub dest val1 val2 = ins "sub %s, %s, %s" dest val1 val2
 
-let mov dest operand = ins "move %s, %s" dest operand
+let mov dest val1 = ins "mov %s, %s" dest val1
+let movCC cc dest val1 = ins "mov%s %s, #%a" cc dest val1
+let cmps reg1 reg2 = ins "cmps %s, %s" reg1 reg2
+let branchCC cc name = ins "b%s %s" cc name
+
+(* Pushing and popping on the stack *)
+let push source offset= ins "str %s, [fp, #-%a]!" source offset
+let pop dest offset = ins "ldr %s, [fp, #-%a]" dest offset
