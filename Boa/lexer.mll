@@ -81,6 +81,11 @@ rule next_tokens = parse
   | "InputUp"    { INPUTUP }
   | "InputDown"  { INPUTDOWN }
   | "InputA"     { INPUTA }
+  | "MoveLeft"   { MOVELEFT }
+  | "MoveRight"  { MOVERIGHT }
+  | "MoveUp"     { MOVEUP }
+  | "MoveDown"   { MOVEDOWN }
+  | "Draw"       { DRAW }
 
 and indentation = parse
   | (space | comment)* '\n'

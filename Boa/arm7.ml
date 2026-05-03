@@ -68,6 +68,8 @@ let mov dest val1 = ins "mov %s, %s" dest val1
 let movCC cc dest val1 = ins "mov%s %s, #%a" cc dest val1
 let cmps reg1 reg2 = ins "cmps %s, %s" reg1 reg2
 let branchCC cc name = ins "b%s %s" cc name
+let newLabel name = ins "%s:" name
+let includeExternal string = ins "%s" string
 
 (* Pushing and popping on the stack *)
 let push source offset= ins "str %s, [fp, #-%a]!" source offset
