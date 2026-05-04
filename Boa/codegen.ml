@@ -6,6 +6,7 @@ open Ast
 
 
 type env = (string, int) Hashtbl.t  (* Maps variable names to stack offsets *)
+(* Global counter for branch-labels *)
 let branchCount = 0
 
 (* Compiling expressions. *)
@@ -15,24 +16,24 @@ let branchCount = 0
      placed at the top of the stack *)
 let rec compile_expr env (expr : Ast.expr) =
   match expr with
-  | ECst constant ->
+  | Ecst constant ->
     match constant with
     | Cnone -> nop
     | Cbool b ->
       Arm7.mov r0 (if b then "#1" else "#0")
     |Cchar c ->
-      Arm7.mov r0 "#" ^ string_of_int (int_of_char c)
+      Arm7.mov r0 ("#" ^ string_of_int (int_of_char c))
     |Cstring s ->
-      Arm7.mov r0 "#" ^ string_of_int (int_of_char (List.nth (String.to_list s) 0)) (* We only take the first character from a string and treat it as a char*)
+      Arm7.mov r0 ("#" ^ string_of_int (int_of_char (s.[0]))) (* We only take the first character from a string and treat it as a char*)
     |Cint i ->
-      Arm7.mov r0 "#" ^ string_of_int (Int32.to_int i)
+      Arm7.mov r0 ("#" ^ string_of_int (Int32.to_int i))
   | Eident {id} ->
     if not (Hashtbl.mem env id) then error "unbound variable";
     let stackOffset = Hashtbl.find env id in
     Arm7.pop r0 stackOffset
   | Ebinop (operand, expr1, expr2)->
     let _ = compile_expr env expr1 in
-    Arm7.mov r1 r0
+    Arm7.mov r1 r0;
     let _ = compile_expr env expr2 in
     match operand with
     | Badd ->
@@ -66,7 +67,7 @@ let rec compile_expr env (expr : Ast.expr) =
     |"MoveDown" ->  
       Arm7.includeExternal "*Move Down Code*"
     |"Draw" ->
-      let compile_expr env (List.nth l 0) in
+      let _ = compile_expr env (List.nth l 0) in
       (* Now our char to draw is in r0 *)
       Arm7.includeExternal "*Draw Code*"
     
@@ -79,7 +80,7 @@ let rec compile_expr env (expr : Ast.expr) =
     ".include gridDynamic" 
 
     But we only have support for 3 x 3 grids, so we just import that one: *)
-    Arm7.includeExternal "*Arm grid code*"
+    Arm7.includeExternal "*Arm 3 x 3 grid code*"
 
 in
 comprec StrMap.empty 0
@@ -93,12 +94,12 @@ let compile_instr env (stmt : Ast.stmt) =
     let _ = compile_expr env expr in
     Arm7.cmps r0 "#1" (* "1" should be stored in r0 if the expr is true *)
     (* We make labels for each branch (true and false) *)
-    let branchTrue = "Branch" ^ string_of_int branchCount in
+    let branchTrue = ("Branch" ^ string_of_int branchCount) in
     Arm7.branchCC "eq" branchTrue
-    branchCount++
-    let branchFalse = "Branch" ^ string_of_int branchCount in
+    branchCount := !branchCount + 1
+    let branchFalse = ("Branch" ^ string_of_int branchCount) in
     Arm7.branchCC "ne" branchFalse
-    branchCount++
+    branchCount := !branchCount + 1
 
     (* We create the labels and put their statements inside *)
     Arm7.newLabel branchTrue
@@ -122,7 +123,7 @@ let compile_instr env (stmt : Ast.stmt) =
       If not, then we add a new offset which extends the stack frame by 4 bytes. *)
     let offset = if Hashtbl.mem env id then Hashtbl.find env id else
       let offNew = (Hashtbl.length env) * 4 in
-      Hashtbl.add env offNew
+      Hashtbl.add env id offNew
       offNew (* This value is stored in "offset" if the variable did not exist prior *)
     in
     Arm7.push r0 offset
@@ -131,14 +132,14 @@ let compile_instr env (stmt : Ast.stmt) =
   |Swhile (expr, stmt) ->
     let _ = compile_expr env expr in
     Arm7.cmps r0 "#1" (* "1" should be stored in r0 if the expr is true *)
-    let branchTrue = "Branch" ^ string_of_int branchCount in
+    let branchTrue = ("Branch" ^ string_of_int branchCount) in
     Arm7.branchCC "eq" branchTrue
-    branchCount++
+    branchCount := !branchCount + 1
 
     Arm7.newLabel branchTrue
-    let _ compile_instr env stmt in
+    let _ = compile_instr env stmt in
     (* Check the expr condition again, and loop if true *)
-    let _ compile_expr env expr in
+    let _ = compile_expr env expr in
     Arm7.cmps r0 "#1"
     Arm7.branchCC "eq" branchTrue
     (* The arm code of the while-loop should look like:
