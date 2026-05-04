@@ -1,0 +1,27 @@
+def Turn(symbol):
+    selecting = True
+    while selecting:
+        if InputLeft():
+            MoveLeft()
+        elif InputRight():
+            MoveRight()
+
+        elif InputUp():
+            MoveUp()
+
+        elif InputDown():
+            MoveDown()
+
+        elif InputA():
+            Draw(symbol)
+            selecting = False
+
+    if symbol == "x":
+        Turn("o")
+    else:
+        Turn("x")
+        
+a = grid(3, 3)
+
+Turn("x")
+
