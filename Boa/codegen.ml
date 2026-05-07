@@ -17,12 +17,12 @@ let functions : (string, int list) Hashtbl.t = Hashtbl.create 10
 let rec compile_function_call env fName args =
   let offSets = Hashtbl.find functions fName in
   List.iteri (fun i arg ->
-    let _ = compile_expr env [] arg in
-    Arm7.push r0 ("#" ^ string_of_int(List.nth offSets i))
+    let _ = compile_expr env arg in
+    Arm7.push r0 (List.nth offSets i)
     ) args;
 
-  Arm7.branchLink fName
-;
+  Arm7.branchLink fName;
+
 (* Compiling function definitions *)
 let compile_function_def (func : Ast.def) =
   let (funcIdent, args, _) = func in
@@ -53,7 +53,7 @@ let compile_function_body env (func : Ast.def) =
 
   (* We add the local variables from the function's arguments to the environment we pass to the compilation of the body.
      We now have access to both global variables declared in main, but also the ones declared in the function definition. *)
-  List.iteri (fun arg i ->
+  List.iteri (fun i arg ->
     Hashtbl.add env arg (List.nth argOffsets i)
     ) args;
 
@@ -98,8 +98,8 @@ let rec compile_expr env (expr : Ast.expr) =
     |Cint i ->
       Arm7.mov r0 ("#" ^ string_of_int (Int32.to_int i))
   | Eident {id} ->
-    if not (Hashtbl.mem env id.id) then error "unbound variable";
-    let stackOffset = Hashtbl.find env id.id in
+    if not (Hashtbl.mem env id) then error "unbound variable";
+    let stackOffset = Hashtbl.find env id in
     Arm7.pop r0 stackOffset
   | Ebinop (operand, expr1, expr2)->
     let _ = compile_expr env expr1 in
@@ -142,8 +142,8 @@ let rec compile_expr env (expr : Ast.expr) =
       Arm7.includeExternal "*Draw Code*"
     | _ ->
       (* User-defined function call *)
-      if not (Hashtbl.mem functions id) then
-        failwith ("Undefined Function: " ^ id)
+      if not (Hashtbl.mem functions id.id) then
+        failwith ("Undefined Function: " ^ id.id)
       else if List.length args != List.length(Hashtbl.find functions id) then
         failwith ("Incorrect amount of arguments passed to function: " ^ id)
       else
@@ -160,26 +160,26 @@ let rec compile_expr env (expr : Ast.expr) =
     Arm7.includeExternal "*Arm 3 x 3 grid code*";
 
 (* Instruction compilation *)
-let rec compile_instr env (stmt : Ast.stmt) =
+and compile_instr env (stmt : Ast.stmt) =
   match stmt with
   | Seval expr ->
     let _ = compile_expr env expr in
   | Sif (expr, stmt1, stmt2) ->
     let _ = compile_expr env expr in
-    Arm7.cmps r0 "#1" (* "1" should be stored in r0 if the expr is true *)
+    Arm7.cmps r0 "#1"; (* "1" should be stored in r0 if the expr is true *)
     (* We make labels for each branch (true and false) *)
     let branchTrue = ("Branch" ^ string_of_int !branchCount) in
-    Arm7.branchCC "eq" branchTrue
+    Arm7.branchCC "eq" branchTrue;
     incr branchCount;
     let branchFalse = ("Branch" ^ string_of_int !branchCount) in
-    Arm7.branchCC "ne" branchFalse
+    Arm7.branchCC "ne" branchFalse;
     incr branchCount;
 
     (* We create the labels and put their statements inside *)
-    Arm7.newLabel branchTrue
+    Arm7.newLabel branchTrue;
     let _ = compile_instr env stmt1 in
 
-    Arm7.newLabel branchFalse
+    Arm7.newLabel branchFalse;
     let _ = compile_instr env stmt2 in
     (* The arm code of the if-statement should look like this: 
       expr
@@ -191,7 +191,7 @@ let rec compile_instr env (stmt : Ast.stmt) =
       BranchY:
       stmt2      
       *)
-  | Sassign ({id}.id, expr) ->
+  | Sassign ({id}, expr) ->
     let _ = compile_expr env expr in (* This stores the "expr" in r0 *)
     (* If the variable is already assigned, we find it in the env.
       If not, then we add a new offset which extends the stack frame by 4 bytes. *)
@@ -206,17 +206,17 @@ let rec compile_instr env (stmt : Ast.stmt) =
     List.iter (compile_instr env) block
   |Swhile (expr, stmt) ->
     let _ = compile_expr env expr in
-    Arm7.cmps r0 "#1" (* "1" should be stored in r0 if the expr is true *)
+    Arm7.cmps r0 "#1"; (* "1" should be stored in r0 if the expr is true *)
     let branchTrue = ("Branch" ^ string_of_int !branchCount) in
-    Arm7.branchCC "eq" branchTrue
+    Arm7.branchCC "eq" branchTrue;
     incr branchCount;
 
-    Arm7.newLabel branchTrue
+    Arm7.newLabel branchTrue;
     let _ = compile_instr env stmt in
     (* Check the expr condition again, and loop if true *)
     let _ = compile_expr env expr in
-    Arm7.cmps r0 "#1"
-    Arm7.branchCC "eq" branchTrue
+    Arm7.cmps r0 "#1";
+    Arm7.branchCC "eq" branchTrue;
     (* The arm code of the while-loop should look like:
     expr
     cmps r0, #1
@@ -234,14 +234,14 @@ let rec compile_instr env (stmt : Ast.stmt) =
  Use the function "open_out output_file" to create the outputfile and open it. *)
  let codegen_file ((defs, main_stmt) : Ast.file) output_file =
   (* Initialise environment. *)
-  let main_env : (string, int) = Hashtbl.create 20 in
+  let main_env : (string, int) Hashtbl.t = Hashtbl.create 20 in
   (* Initialise frame pointer to point at a certain position on the stack. *)
   Arm7.add fp sp "#8";
 
   (* Compile order:
-     Function def (with input parameters) -> *)
-  List.iter compile_function_def defs;
-  (* Main statements (includes function calls) -> *)
-  List.iter compile_instr main_env main_stmt;
-  (* Function bodies (they can now access global variables created by the main statements) *)
-  List.iter compile_function_body main_env defs;
+     Function def (with input parameters): *)
+  List.iter (fun def -> compile_function_def def) defs;
+  (* Main statements (includes function calls): *)
+  let _ = compile_instr main_env main_stmt in
+  (* Function bodies (they can now access global variables created by the main statements): *)
+  List.iter (fun def -> compile_function_body main_env def) defs;
