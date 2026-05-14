@@ -74,5 +74,8 @@ let includeExternal string = ins "%s" string
 
 
 (* Pushing and popping on the stack *)
-let push source offset= ins "str %s, [fp, #-%a]!" source offset
-let pop dest offset = ins "ldr %s, [fp, #-%a]" dest offset
+let push source = ins "str %s, [sp, #-4]!" source
+let pop dest  = ins "ldr %s, [sp], #4" dest
+(* Pushing popping on the stack with offset. Is used for variable storage. *)
+let pushF source offset= ins "str %s, [fp, #-%a]" source offset
+let popF dest offset = ins "ldr %s, [fp, #-%a]" dest offset

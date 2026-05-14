@@ -18,7 +18,7 @@ let rec compile_function_call env fName args =
   let offSets = Hashtbl.find functions fName in
   List.iteri (fun i arg ->
     let _ = compile_expr env arg in
-    Arm7.push r0 (List.nth offSets i)
+    Arm7.pushF r0 (List.nth offSets i)
     ) args;
 
   Arm7.branchLink fName;
@@ -56,7 +56,9 @@ let compile_function_body env (func : Ast.def) =
   List.iteri (fun i arg ->
     Hashtbl.add env arg (List.nth argOffsets i)
     ) args;
-
+  
+  (* Function prologue. We store lr in case the body calls other functions. *)
+  Arm7.push lr;
   (* Compile the function body with updated environment*)
   let _ = compile_instr env funcBody in
   
@@ -75,8 +77,8 @@ let compile_function_body env (func : Ast.def) =
   (* Reset the oldEnv environment to save space, as we will no longer use it. *)
   Hashtbl.reset oldEnv;
 
-  (* End function by pushing lr back into the pc to return the after the function was called *)
-  Arm7.mov pc lr;
+  (* Function epilogue. We pop the lr back into the pc. *)
+  Arm7.pop pc;
 
 (* Compiling expressions. *)
   (* Recursive function compile_expr used to generate ARM code of the
@@ -100,7 +102,7 @@ let rec compile_expr env (expr : Ast.expr) =
   | Eident {id} ->
     if not (Hashtbl.mem env id) then error "unbound variable";
     let stackOffset = Hashtbl.find env id in
-    Arm7.pop r0 stackOffset
+    Arm7.popF r0 stackOffset
   | Ebinop (operand, expr1, expr2)->
     let _ = compile_expr env expr1 in
     Arm7.mov r1 r0;
@@ -201,7 +203,7 @@ and compile_instr env (stmt : Ast.stmt) =
       Hashtbl.add env id offNew
       offNew (* This value is stored in "offset" if the variable did not exist prior *)
     in
-    Arm7.push r0 offset
+    Arm7.pushF r0 offset
   |Sblock block ->
     List.iter (compile_instr env) block
   |Swhile (expr, stmt) ->
