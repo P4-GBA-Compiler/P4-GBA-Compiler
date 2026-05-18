@@ -24,7 +24,7 @@ let rec compile_function_call env fName args =
   Arm7.branchLink fName;
 
 (* Compiling function definitions *)
-let compile_function_def (func : Ast.def) =
+and compile_function_def (func : Ast.def) =
   let (funcIdent, args, _) = func in
   let funcName = funcIdent.id in
   let argOffsets = ref [] in
@@ -240,7 +240,7 @@ and compile_stmt env (stmt : Ast.stmt) =
   (* Initialise frame pointer to point at a certain position on the stack. *)
   Arm7.add fp sp "#8";
 
-  (* Compile order:
+  (* Compilation order:
      Function def (with input parameters): *)
   List.iter (fun def -> compile_function_def def) defs;
   (* Main statements (includes function calls): *)
