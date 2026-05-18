@@ -60,7 +60,7 @@ let compile_function_body env (func : Ast.def) =
   (* Function prologue. We store lr in case the body calls other functions. *)
   Arm7.push lr;
   (* Compile the function body with updated environment*)
-  let _ = compile_instr env funcBody in
+  let _ = compile_stmt env funcBody in
   
   (* After compiling the body, we now remove the function arguments from the main environment. *)
   List.iteri (fun arg i ->
@@ -84,7 +84,7 @@ let compile_function_body env (func : Ast.def) =
   (* Recursive function compile_expr used to generate ARM code of the
      abstract syntax tree associated with a value of type Ast.expr;
      at the end of the execution of this code, the translation of value must be
-     placed at the top of the stack *)
+     placed in *)
 let rec compile_expr env (expr : Ast.expr) =
   match expr with
   | Ecst constant ->
@@ -149,7 +149,7 @@ let rec compile_expr env (expr : Ast.expr) =
       else if List.length args != List.length(Hashtbl.find functions id) then
         failwith ("Incorrect amount of arguments passed to function: " ^ id)
       else
-        compile_function_call env id args (* We pass only the global environment if we call a function *)
+        compile_function_call env id args
 
   | Egrid (expr1, expr2) ->
     (* If we had dynamic grids it would be something like this:
@@ -161,11 +161,11 @@ let rec compile_expr env (expr : Ast.expr) =
     But we only have support for 3 x 3 grids, so we just import that one: *)
     Arm7.includeExternal "*Arm 3 x 3 grid code*";
 
-(* Instruction compilation *)
-and compile_instr env (stmt : Ast.stmt) =
+(* Statement compilation *)
+and compile_stmt env (stmt : Ast.stmt) =
   match stmt with
   | Seval expr ->
-    let _ = compile_expr env expr in
+    compile_expr env expr
   | Sif (expr, stmt1, stmt2) ->
     let _ = compile_expr env expr in
     Arm7.cmps r0 "#1"; (* "1" should be stored in r0 if the expr is true *)
@@ -179,10 +179,10 @@ and compile_instr env (stmt : Ast.stmt) =
 
     (* We create the labels and put their statements inside *)
     Arm7.newLabel branchTrue;
-    let _ = compile_instr env stmt1 in
+    let _ = compile_stmt env stmt1 in
 
     Arm7.newLabel branchFalse;
-    let _ = compile_instr env stmt2 in
+    compile_stmt env stmt2
     (* The arm code of the if-statement should look like this: 
       expr
       cmps r0, #1
@@ -205,7 +205,7 @@ and compile_instr env (stmt : Ast.stmt) =
     in
     Arm7.pushF r0 offset
   |Sblock block ->
-    List.iter (compile_instr env) block
+    List.iter (compile_stmt env) block
   |Swhile (expr, stmt) ->
     let _ = compile_expr env expr in
     Arm7.cmps r0 "#1"; (* "1" should be stored in r0 if the expr is true *)
@@ -214,7 +214,7 @@ and compile_instr env (stmt : Ast.stmt) =
     incr branchCount;
 
     Arm7.newLabel branchTrue;
-    let _ = compile_instr env stmt in
+    let _ = compile_stmt env stmt in
     (* Check the expr condition again, and loop if true *)
     let _ = compile_expr env expr in
     Arm7.cmps r0 "#1";
@@ -244,6 +244,6 @@ and compile_instr env (stmt : Ast.stmt) =
      Function def (with input parameters): *)
   List.iter (fun def -> compile_function_def def) defs;
   (* Main statements (includes function calls): *)
-  let _ = compile_instr main_env main_stmt in
+  let _ = compile_stmt main_env main_stmt in
   (* Function bodies (they can now access global variables created by the main statements): *)
   List.iter (fun def -> compile_function_body main_env def) defs;
