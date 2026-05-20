@@ -1,11 +1,14 @@
 open Lexing
 
 (* To use the compiler you input the following on the command line:
-ocamlc -o compiler ast.ml lexer.ml parser.ml codegen.ml main.ml
-compiler.exe input.boa output.asm
-./compiler input.boa output.asm (for mac)
-"compiler" is just the name of the file, it can be anything. *)
+ocamlc -c ast.ml
+ocamllex lexer.mll
+menhir --infer --explain parser.mly
+ocamlc -o compiler.exe ast.ml parser.mli parser.ml lexer.ml gba_stdlib.ml arm7.ml codegen.ml main.ml
 
+compiler.exe input.boa output.asm
+./compiler.exe input.boa output.asm (for mac/linux)
+*)
 
 (* This function is essentially the "main" that run when program starts.
   "()" mean that it takes no arguments *)
@@ -24,14 +27,15 @@ let () =
   let input_file = Sys.argv.(1) in
   let output_file = if Array.length Sys.argv > 2 then Sys.argv.(2) else "output.asm" in
   
+  (* Here we open the input file to be read from.
+    "open_in" opens the file for reading and returns an input channel.
+    "Lexing.from_channel" wraps the channel into a lexbuffer so we can
+    read a stream of characters.
+    We do this before the 'try' block so it is available to the error handlers! *)
+  let input_read = open_in input_file in
+  let lexbuf = Lexing.from_channel input_read in
+  
   try
-    (* Here we open the input file to be read from.
-      "open_in" opens the file for reading and returns an input channel.
-      "Lexing.from_channel" wraps the channel into a lexbuffer so we can
-      read a stream of characters.*)
-    let input_read = open_in input_file in
-    let lexbuf = Lexing.from_channel input_read in
-    
     (* Parser.file = parser.mly 
        Lexer = lexer.mll
        The parser repeatedly calls the "next_token" function from lexer.mll

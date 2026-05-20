@@ -9,7 +9,7 @@ type location = Lexing.position * Lexing.position
 type ident = { loc: location; id: string; }
 
 type unop =
-  | Uneg (* -e *) (* NB: We did not implement this in backend *)
+  | Uneg (* -e *)  (* NB: We did not implement this in backend *)
   | Unot (* not e *) (* NB: We did not implement this in backend *)
 
 type binop = (* NB: We only implemented Badd, Bsub and Beq in backend *)

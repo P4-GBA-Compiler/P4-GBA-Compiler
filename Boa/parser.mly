@@ -64,7 +64,7 @@ expr:
 | LSQ l = separated_list(COMMA, expr) RSQ
     { Elist l }
 | GRID LP r = expr COMMA c = expr RP           /* NEW: grid(3,3) */
-    { Egrid [r; c] }
+    { Egrid (r, c) }
 | LP e = expr RP
     { e }
 
@@ -91,8 +91,8 @@ expr:
     { Ecall ({id="MoveUp"; loc=($startpos,$endpos)}, []) }
 | MOVEDOWN LP RP      
     { Ecall ({id="MoveDown"; loc=($startpos,$endpos)}, []) }   
-| DRAW LP x = ident RP      
-    { Ecall ({id="Draw"; loc=($startpos,$endpos)}, x) }  
+| DRAW LP x = expr RP      
+    { Ecall ({id="Draw"; loc=($startpos,$endpos)}, [x]) } 
 ;
 
 suite:
