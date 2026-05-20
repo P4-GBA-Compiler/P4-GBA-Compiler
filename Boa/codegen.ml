@@ -99,7 +99,9 @@ let rec compile_expr env (expr : Ast.expr) =
     | "Draw" ->
       compile_expr env (List.nth args 0);
       Arm7.branchLink "TryPlaceSymbol";
-      Arm7.branchLink "WaitForReleaseAny"
+      Arm7.push_sp "r0"; 
+      Arm7.branchLink "WaitForReleaseAny";
+      Arm7.pop_sp "r0"
     | _ ->
       (* User-defined function call *)
       if not (Hashtbl.mem functions func_name) then
@@ -126,20 +128,25 @@ and compile_instr env (stmt : Ast.stmt) =
     Arm7.cmps r0 "#1"; (* "1" should be stored in r0 if the expr is true *)
 
     (* We make labels for each branch (true and false) *)
-    let branchTrue = ("Branch" ^ string_of_int !branchCount) in
+    let branchTrue = ("BranchTrue" ^ string_of_int !branchCount) in
     Arm7.branchCC "eq" branchTrue;
     incr branchCount;
     
-    let branchFalse = ("Branch" ^ string_of_int !branchCount) in
+    let branchFalse = ("BranchFalse" ^ string_of_int !branchCount) in
     Arm7.branchCC "ne" branchFalse;
+    incr branchCount;
+
+    let branchEnd = ("BranchEnd" ^ string_of_int !branchCount) in
     incr branchCount;
 
     (* We create the labels and put their statements inside *)
     Arm7.newLabel branchTrue;
     compile_instr env stmt1;
-
+    Arm7.branchCC "al" branchEnd;
     Arm7.newLabel branchFalse;
-    compile_instr env stmt2
+    compile_instr env stmt2;
+
+    Arm7.newLabel branchEnd
     (* The arm code of the if-statement should look like this: 
       expr
       cmps r0, #1
@@ -170,7 +177,7 @@ and compile_instr env (stmt : Ast.stmt) =
   | Swhile (expr, stmt) ->
     compile_expr env expr;
     Arm7.cmps r0 "#1"; (* "1" should be stored in r0 if the expr is true *)
-    let branchTrue = ("Branch" ^ string_of_int !branchCount) in
+    let branchTrue = ("BranchWhileTrue" ^ string_of_int !branchCount) in
     Arm7.branchCC "eq" branchTrue;
     incr branchCount;
 

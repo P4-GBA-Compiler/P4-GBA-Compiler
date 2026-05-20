@@ -1,0 +1,27 @@
+def Turn(symbol):
+    selecting = True
+    while selecting:
+        # ALL CONTROLS ARE INVERTED!
+        if InputLeft():
+            MoveRight()
+        elif InputRight():
+            MoveLeft()
+
+        elif InputUp():
+            MoveDown()
+
+        elif InputDown():
+            MoveUp()
+
+        elif InputA():
+            if Draw(symbol):  # Only set to False if Draw returns True (1)
+                selecting = False
+
+    if symbol == "X":
+        Turn("O")
+    else:
+        Turn("X")
+        
+a = grid(3, 3)
+
+Turn("X")
