@@ -11,7 +11,7 @@
 %token EOF
 %token LP RP LSQ RSQ COMMA EQUAL COLON BEGIN END NEWLINE
 %token PLUS MINUS TIMES DIV MOD
-%token INPUTUP INPUTDOWN INPUTRIGHT INPUTLEFT INPUTA
+%token INPUTLEFT INPUTRIGHT INPUTUP INPUTDOWN INPUTA INPUTB MOVELEFT MOVERIGHT MOVEUP MOVEDOWN DRAW
 
 /* New token for "grid" keyword */
 %token GRID
@@ -64,7 +64,7 @@ expr:
 | LSQ l = separated_list(COMMA, expr) RSQ
     { Elist l }
 | GRID LP r = expr COMMA c = expr RP           /* NEW: grid(3,3) */
-    { Egrid [r; c] }
+    { Egrid (r, c) }
 | LP e = expr RP
     { e }
 
@@ -79,6 +79,20 @@ expr:
     { Ecall ({id="InputDown"; loc=($startpos,$endpos)}, []) }
 | INPUTA LP RP      
     { Ecall ({id="InputA"; loc=($startpos,$endpos)}, []) } 
+| INPUTB LP RP      
+    { Ecall ({id="InputB"; loc=($startpos,$endpos)}, []) }
+
+    /*Move and Draw Tokens*/
+| MOVELEFT LP RP      
+    { Ecall ({id="MoveLeft"; loc=($startpos,$endpos)}, []) }
+| MOVERIGHT LP RP      
+    { Ecall ({id="MoveRight"; loc=($startpos,$endpos)}, []) }
+| MOVEUP LP RP      
+    { Ecall ({id="MoveUp"; loc=($startpos,$endpos)}, []) }
+| MOVEDOWN LP RP      
+    { Ecall ({id="MoveDown"; loc=($startpos,$endpos)}, []) }   
+| DRAW LP x = expr RP      
+    { Ecall ({id="Draw"; loc=($startpos,$endpos)}, [x]) } 
 ;
 
 suite:

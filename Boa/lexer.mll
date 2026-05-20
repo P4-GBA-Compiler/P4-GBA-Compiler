@@ -24,6 +24,11 @@
        "InputUp", INPUTUP;
        "InputDown", INPUTDOWN;
        "InputA", INPUTA;
+       "MoveLeft", MOVELEFT;
+       "MoveRight", MOVERIGHT;
+       "MoveUp", MOVEUP;
+       "MoveDown",MOVEDOWN;
+       "Draw", DRAW;
        ];
    fun s -> try Hashtbl.find h s with Not_found -> IDENT s
 

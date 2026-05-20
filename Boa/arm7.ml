@@ -12,7 +12,7 @@ let r7 : register = "r7"
 let r8 : register = "r8"
 let r9 : register = "r9"
 let r10 : register = "r10"
-let r11 : register = "r11"
+let fp : register = "fp"
 let r12 : register = "r12"
 let sp : register = "sp"
 let lr : register = "lr"
@@ -28,21 +28,13 @@ let oreg : register operand = fun fmt (r : register) -> fprintf fmt "%s" r
 let oi : int operand = fun fmt i -> fprintf fmt "%i" i
 let oi32 : int32 operand = fun fmt i -> fprintf fmt "%li" i
 
-type 'a asm =
-  | Nop
-  | S of string
-  | Cat of 'a asm * 'a asm
-
-let buf = Buffer.create 17
-let fmt = formatter_of_buffer buf
+let output_buffer = Buffer.create 1024
+let fmt = formatter_of_buffer output_buffer
 let ins x =
-  Buffer.add_char buf '\t';
+  Buffer.add_char output_buffer '\t';
   kfprintf (fun fmt ->
     fprintf fmt "\n";
-    pp_print_flush fmt ();
-    let s = Buffer.contents buf in
-    Buffer.clear buf;
-    S s
+    pp_print_flush fmt ()
   ) fmt x
 
 let pr_list fmt pr = function
@@ -58,9 +50,30 @@ let pr_alist fmt l =
 
 (* End of Leon's code *)
 
-let add a b c = ins "add %s, %s, #%a" a b c
-let mov a b = ins "mov %s, #%a" a b
+(* Assembly instructions *)
+let add dest val1 val2 = ins "add %s, %s, %s" dest val1 val2
+let sub dest val1 val2 = ins "sub %s, %s, %s" dest val1 val2
 
-let (++) x y = Cat (x, y)
+let mov dest val1 = ins "mov %s, %s" dest val1
+let movCC cc dest val1 = ins "mov%s %s, #%i" cc dest val1
+let cmps reg1 reg2 = ins "cmps %s, %s" reg1 reg2
+let branchCC cc name = ins "b%s %s" cc name
+let branchLink name = ins "bl %s" name
+let newLabel name = ins "%s:" name
+let includeExternal string = ins "%s" string
 
-let mov dest operand = ins "move %s, %s" dest operand
+
+(* Pushing and popping on the stack *)
+(* Removed the '!' writeback so 'fp' stays static! *)
+
+(* Pushing and popping on the stack using Stack Pointer (for lr/pc) *)
+let push_sp source = ins "str %s, [sp, #-4]!" source
+let pop_sp dest = ins "ldr %s, [sp], #4" dest
+
+(* Pushing popping on the stack with static Frame Pointer offset (for variables) *)
+let push source offset = ins "str %s, [fp, #-%i]" source offset
+let pop dest offset = ins "ldr %s, [fp, #-%i]" dest offset
+
+let write_to_file out_channel =
+  output_string out_channel (Buffer.contents output_buffer);
+  Buffer.clear output_buffer
