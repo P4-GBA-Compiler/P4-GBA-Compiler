@@ -1,4 +1,3 @@
-
 (* Abstract Syntax of Gex *)
 
 (* Parsed trees.
@@ -12,7 +11,7 @@ type unop =
   | Uneg (* -e *)  (* NB: We did not implement this in backend *)
   | Unot (* not e *) (* NB: We did not implement this in backend *)
 
-type binop = (* NB: We only implemented Badd, Bsub and Beq in backend *)
+type binop = (* NB: We did not implement Bdiv, Bmod, Band and Bor in backend *)
   | Badd | Bsub | Bmul | Bdiv | Bmod    (* + - * // % *)
   | Beq | Bneq | Blt | Ble | Bgt | Bge  (* == != < <= > >= *)
   | Band | Bor                          (* and or *)
@@ -47,6 +46,11 @@ and stmt =
   | Sset2 of expr * expr * expr * expr (* added by DB for a[r,c] = val on grids *) (* NB: We did not implement this in backend *)
   | Swhile of expr * stmt (*added While *)
 
+
 and def = ident * ident list * stmt
+
+and file_item =
+  | Def of (ident * ident list * stmt)
+  | Stmt of stmt
 
 and file = def list * stmt

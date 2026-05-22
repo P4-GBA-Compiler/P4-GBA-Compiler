@@ -53,26 +53,23 @@ let pr_alist fmt l =
 (* Assembly instructions *)
 let add dest val1 val2 = ins "add %s, %s, %s" dest val1 val2
 let sub dest val1 val2 = ins "sub %s, %s, %s" dest val1 val2
+let mul dest val1 val2 = ins "mul %s, %s, %s" dest val1 val2
 
 let mov dest val1 = ins "mov %s, %s" dest val1
-let movCC cc dest val1 = ins "mov%s %s, #%i" cc dest val1
+let movCC cc dest val1 = ins "mov%s %s, %s" cc dest val1
 let cmps reg1 reg2 = ins "cmps %s, %s" reg1 reg2
+let branch name = ins "b %s" name
 let branchCC cc name = ins "b%s %s" cc name
 let branchLink name = ins "bl %s" name
 let newLabel name = ins "%s:" name
-let includeExternal string = ins "%s" string
-
 
 (* Pushing and popping on the stack *)
-(* Removed the '!' writeback so 'fp' stays static! *)
+let push source = ins "str %s, [sp, #-4]!" source
+let pop dest = ins "ldr %s, [sp], #4" dest
 
-(* Pushing and popping on the stack using Stack Pointer (for lr/pc) *)
-let push_sp source = ins "str %s, [sp, #-4]!" source
-let pop_sp dest = ins "ldr %s, [sp], #4" dest
-
-(* Pushing popping on the stack with static Frame Pointer offset (for variables) *)
-let push source offset = ins "str %s, [fp, #-%i]" source offset
-let pop dest offset = ins "ldr %s, [fp, #-%i]" dest offset
+(* Storing and loading data on the stack with static Frame Pointer offset (for variables) *)
+let store source offset = ins "str %s, [fp, #-%i]" source offset
+let load dest offset = ins "ldr %s, [fp, #-%i]" dest offset
 
 let write_to_file out_channel =
   output_string out_channel (Buffer.contents output_buffer);

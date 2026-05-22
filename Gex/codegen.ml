@@ -20,6 +20,7 @@ let compile_function_def (func : Ast.def) =
   let funcName = funcIdent.id in
   let argOffsets = ref [] in
 
+  if Hashtbl.mem functions funcName then failwith ("Function '" ^ funcName ^ "' defined more than once.");
   (* Map arguments to stack offsets so they can be referenced later *)
   List.iter (fun _arg ->
     let offset = !varCount * 4 in
@@ -53,7 +54,7 @@ let rec compile_expr env (expr : Ast.expr) =
   | Eident {id} ->
     if not (Hashtbl.mem env id) then failwith "unbound variable";
     let stackOffset = Hashtbl.find env id in
-    Arm7.pop r0 stackOffset
+    Arm7.load r0 stackOffset
   | Ebinop (operand, expr1, expr2) ->
     compile_expr env expr1;
     Arm7.mov r1 r0;
@@ -63,10 +64,32 @@ let rec compile_expr env (expr : Ast.expr) =
       Arm7.add r0 r1 r0
     | Bsub ->
       Arm7.sub r0 r1 r0
+    | Bmul ->
+      Arm7.mul r0 r1 r0
     | Beq ->
       Arm7.cmps r1 r0; (* Sets Z flag if values are equal *)
-      Arm7.movCC "eq" r0 1; (* CC = eq makes instruction happen if Z flag is set *)
-      Arm7.movCC "ne" r0 0 (* CC = ne makes instruction happen if Z flag is not set *)
+      Arm7.movCC "eq" r0 ("#" ^ string_of_int 1); (* CC = eq makes instruction happen if Z flag is set *)
+      Arm7.movCC "ne" r0 ("#" ^ string_of_int 0) (* CC = ne makes instruction happen if Z flag is not set *)
+    | Bneq ->
+      Arm7.cmps r1 r0; (* Sets Z flag if values are equal *)
+      Arm7.movCC "eq" r0 ("#" ^ string_of_int 0); (* CC = eq makes instruction happen if Z flag is set *)
+      Arm7.movCC "ne" r0 ("#" ^ string_of_int 1) (* CC = ne makes instruction happen if Z flag is not set *)
+    | Blt ->
+      Arm7.cmps r1 r0; (* Sets flags *)
+      Arm7.mov r0 ("#" ^ string_of_int 0);
+      Arm7.movCC "lt" r0 ("#" ^ string_of_int 1) (* CC = lt makes instruction happen if N flag set and V clear, or if N clear and V set *)
+    | Ble ->
+      Arm7.cmps r1 r0; (* Sets flags *)
+      Arm7.mov  r0 ("#" ^ string_of_int 0);
+      Arm7.movCC "le" r0 ("#" ^ string_of_int 1) (* CC = le makes instruction happen if Z set or N set and V clear, or N clear and V set *)
+    | Bgt ->
+      Arm7.cmps r1 r0; (* Sets flags *)
+      Arm7.mov r0 ("#" ^ string_of_int 0);
+      Arm7.movCC "gt" r0 ("#" ^ string_of_int 1) (* CC = gt makes instruction happen if Z clear and N set or V set or N clear and V clear *)
+    | Bge ->
+      Arm7.cmps r1 r0; (* Sets flags *)
+      Arm7.mov r0 ("#" ^ string_of_int 0);
+      Arm7.movCC "ge" r0 ("#" ^ string_of_int 1) (* CC = ge makes instruction happen if N set and V set or N clear and V clear *)
     | _ -> failwith "Unsupported binop"
     end
   | Ecall (func_ident, args) ->
@@ -99,9 +122,9 @@ let rec compile_expr env (expr : Ast.expr) =
     | "Draw" ->
       compile_expr env (List.nth args 0);
       Arm7.branchLink "TryPlaceSymbol";
-      Arm7.push_sp "r0"; 
+      Arm7.push "r0"; 
       Arm7.branchLink "WaitForReleaseAny";
-      Arm7.pop_sp "r0"
+      Arm7.pop "r0"
     | _ ->
       (* User-defined function call *)
       if not (Hashtbl.mem functions func_name) then
@@ -171,7 +194,7 @@ and compile_instr env (stmt : Ast.stmt) =
       offNew (* This value is stored in "offset" if the variable did not exist prior *)
       end
     in
-    Arm7.push r0 offset
+    Arm7.store r0 offset
   | Sblock block ->
     List.iter (compile_instr env) block
   | Swhile (expr, stmt) ->
@@ -204,7 +227,7 @@ and compile_function_call env fName args =
   let offSets = Hashtbl.find functions fName in
   List.iteri (fun i arg ->
     compile_expr env arg;
-    Arm7.push r0 (List.nth offSets i)
+    Arm7.store r0 (List.nth offSets i)
     ) args;
 
   Arm7.branchLink fName   
@@ -229,7 +252,7 @@ let compile_function_body env (func : Ast.def) =
     ) args;
 
   (* Function prologue - Save link register so nested functions don't clobber it *)
-  Arm7.push_sp "lr";
+  Arm7.push "lr";
 
   (* Compile the function body with updated environment*)
   compile_instr env funcBody;
@@ -250,13 +273,13 @@ let compile_function_body env (func : Ast.def) =
   Hashtbl.reset oldEnv;
 
   (* Function epilogue - Pop the saved link register directly into the program counter *)
-  Arm7.pop_sp "pc"
+  Arm7.pop "pc"
 
 (* We need a function with the following syntax:
  let codegen_file (defs, main_stmt) output_file = .....
  This function is called in main.ml.
  Use the function "open_out output_file" to create the outputfile and open it. *)
- let codegen_file ((defs, main_stmt) : Ast.file) output_file =
+let codegen_file ((defs, main_stmt) : Ast.file) output_file =
   let out_channel = open_out output_file in
   output_string out_channel grid_config;
   output_string out_channel gba_header;
@@ -273,11 +296,17 @@ let compile_function_body env (func : Ast.def) =
   List.iter (fun def -> compile_function_def def) defs;
   (* Main statements (includes function calls): *)
   compile_instr main_env main_stmt;
+  (* End program by going to "EndProg" loop *)
+  Arm7.branch "EndProg";
   (* Function bodies (they can now access global variables created by the main statements): *)
   List.iter (fun def -> compile_function_body main_env def) defs;
+  
+  (* EndProg loop *)
+  Arm7.newLabel "EndProg";
+  Arm7.branch "EndProg";
 
   Arm7.write_to_file out_channel;
-  
+
   output_string out_channel input_helpers;
   output_string out_channel movement;
   output_string out_channel drawing;

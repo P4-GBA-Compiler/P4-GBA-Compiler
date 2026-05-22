@@ -13,15 +13,16 @@ def Turn(symbol):
             MoveDown()
 
         elif InputA():
-            if Draw(symbol):  # Only set to False if Draw returns True (1)
-                selecting = False
+            Draw(symbol)
+            selecting = False
+        elif InputB():
+            grid(3,3) # This clears the grid
+            symbol = "X"
 
     if symbol == "X":
         Turn("O")
     else:
         Turn("X")
-        
-a = grid(3, 3)
 
+grid(3,3)
 Turn("X")
-

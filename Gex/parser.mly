@@ -29,13 +29,22 @@
 %nonassoc LSQ
 
 %start file
+%type <Ast.file_item> file_item
 %type <Ast.file> file
 
 %%
 
-file:
-| NEWLINE? dl = list(def) b = nonempty_list(stmt) NEWLINE? EOF
-    { dl, Sblock b }
+file: (* We parse all "file_item"s and then sort them into "defs" and "stmts".
+         This allows for "stmts" and "defs" to be in any order in the input file. *)
+| items = list(file_item) NEWLINE? EOF
+    { let defs = List.filter_map (function Def (f, x, s) -> Some (f, x, s) | _ -> None) items in
+      let stmts = List.filter_map (function Stmt s -> Some s | _ -> None) items in
+      defs, Sblock stmts }
+;
+
+file_item:
+| d = def   { Def d }
+| s = stmt  { Stmt s }
 ;
 
 def:
@@ -103,13 +112,6 @@ suite:
 ;
 
 stmt:
-// | s = simple_stmt NEWLINE
-//     { s }
-// | IF c = expr COLON s = suite
-//     { Sif (c, s, Sblock []) }
-// | IF c = expr COLON s1 = suite ELSE COLON s2 = suite
-//     { Sif (c, s1, s2) }
-
 | s = simple_stmt NEWLINE
     { s }
 | IF c = expr COLON s1 = suite rest = elif_chain

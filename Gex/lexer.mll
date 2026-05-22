@@ -58,7 +58,7 @@ let space = ' ' | '\t'
 let comment = "#" [^'\n']*
 
 rule next_tokens = parse
-  | '\n'    { new_line lexbuf; update_stack (indentation lexbuf) }
+  | ['\r' '\n']+  { new_line lexbuf; update_stack (indentation lexbuf) } (* "\r\n" is used by Windows for line breaks *)
   | (space | comment)+
             { next_tokens lexbuf }
   | ident as id { [id_or_kwd id] }
@@ -84,12 +84,14 @@ rule next_tokens = parse
             { try [CST (Cint (Int32.of_string s))]
               with _ -> raise (Lexing_error ("constant too large: " ^ s)) }
   | '"'     { [CST (Cstring (string lexbuf))] }
-  | eof     { NEWLINE :: unindent 0 @ [EOF] }
+  | eof    { NEWLINE :: unindent 0 @ [EOF] }
   | _ as c  { raise (Lexing_error ("illegal character: " ^ String.make 1 c)) }
 
 and indentation = parse
   | (space | comment)* '\n'
       { new_line lexbuf; indentation lexbuf }
+  | (space | comment)* eof (* Now files can end with a space without causing errors *)
+      { 0 }
   | space* as s
       { String.length s }
 
@@ -116,8 +118,8 @@ and string = parse
     let tokens = Queue.create () in (* next tokens to emit *)
     fun lb ->
       if Queue.is_empty tokens then begin
-	let l = next_tokens lb in
-	List.iter (fun t -> Queue.add t tokens) l
-      end;
-      Queue.pop tokens
+      let l = next_tokens lb in
+      List.iter (fun t -> Queue.add t tokens) l
+          end;
+          Queue.pop tokens
 }
