@@ -1,5 +1,5 @@
 
-(* Abstract Syntax of Mini-Python *)
+(* Abstract Syntax of Gex *)
 
 (* Parsed trees.
    This is the output of the parser and the input of the interpreter. *)

@@ -6,8 +6,8 @@ ocamllex lexer.mll
 menhir --infer --explain parser.mly
 ocamlc -o compiler.exe ast.ml parser.mli parser.ml lexer.ml gba_stdlib.ml arm7.ml codegen.ml main.ml
 
-compiler.exe input.boa output.asm
-./compiler.exe input.boa output.asm (for mac/linux)
+compiler.exe input.gex output.asm
+./compiler.exe input.gex output.asm (for mac/linux)
 *)
 
 (* This function is essentially the "main" that run when program starts.
@@ -19,7 +19,7 @@ let () =
     The last (optional) input "Sys.argv.(2)" is the output file, which will default to
     "output.asm" if unspecified. *)
   if Array.length Sys.argv < 2 then begin
-    Printf.eprintf "Usage: %s <input.boa> <output.asm>\n" Sys.argv.(0);
+    Printf.eprintf "Usage: %s <input.gex> <output.asm>\n" Sys.argv.(0);
     exit 1
   end;
   

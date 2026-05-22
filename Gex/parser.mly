@@ -1,4 +1,4 @@
-/* Parser for Mini-Python + Grid support for Tic-Tac-Toe */
+/* Parser for Gex + Grid support for Tic-Tac-Toe */
 
 %{
   open Ast

@@ -1,4 +1,4 @@
-(* Lexical analyzer for Boa *)
+(* Lexical analyzer for Gex *)
 
 {
   open Lexing

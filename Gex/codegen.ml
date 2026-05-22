@@ -1,4 +1,4 @@
-(* ARM code generation for the Boa language *)
+(* ARM code generation for the Gex language *)
 
 open Format
 open Arm7
