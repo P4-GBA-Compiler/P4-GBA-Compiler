@@ -1,3 +1,6 @@
+grid(3,3)
+Turn("X")
+
 def Turn(symbol):
     selecting = True
     while selecting:
@@ -23,6 +26,3 @@ def Turn(symbol):
         Turn("O")
     else:
         Turn("X")
-
-grid(3,3)
-Turn("X")
