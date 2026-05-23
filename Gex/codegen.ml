@@ -44,8 +44,6 @@ let rec compile_expr env (expr : Ast.expr) =
       Arm7.mov r0 "#0" (* Default value *)
     | Cbool b ->
       Arm7.mov r0 (if b then "#1" else "#0")
-    | Cchar c ->
-      Arm7.mov r0 ("#" ^ string_of_int (int_of_char c))
     | Cstring s ->
       Arm7.mov r0 ("#" ^ string_of_int (int_of_char (s.[0]))) (* We only take the first character from a string and treat it as a char*)
     | Cint i ->

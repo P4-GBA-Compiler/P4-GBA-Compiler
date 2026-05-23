@@ -19,7 +19,6 @@ type binop = (* NB: We did not implement Bdiv, Bmod, Band and Bor in backend *)
 type constant =
   | Cnone
   | Cbool of bool
-  | Cchar of char
   | Cstring of string
   | Cint of int32
 
