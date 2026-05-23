@@ -130,7 +130,7 @@ let rec compile_expr env (expr : Ast.expr) =
       else if List.length args <> List.length (Hashtbl.find functions func_name) then
         failwith ("Incorrect amount of arguments passed to function: " ^ func_name)
       else
-        compile_function_call env func_name args (* We pass only the global environment if we call a function *)
+        compile_function_call env func_name args
     end
   | Egrid (_expr1, _expr2) ->
     Arm7.branchLink "ScreenInit";
@@ -139,8 +139,8 @@ let rec compile_expr env (expr : Ast.expr) =
     Arm7.branchLink "ShowCursor"
   | _ -> ()
 
-(* Instruction compilation *)
-and compile_instr env (stmt : Ast.stmt) =
+(* Statement compilation *)
+and compile_stmt env (stmt : Ast.stmt) =
   match stmt with
   | Seval expr ->
     compile_expr env expr
@@ -162,10 +162,10 @@ and compile_instr env (stmt : Ast.stmt) =
 
     (* We create the labels and put their statements inside *)
     Arm7.newLabel branchTrue;
-    compile_instr env stmt1;
+    compile_stmt env stmt1;
     Arm7.branchCC "al" branchEnd;
     Arm7.newLabel branchFalse;
-    compile_instr env stmt2;
+    compile_stmt env stmt2;
 
     Arm7.newLabel branchEnd
     (* The arm code of the if-statement should look like this: 
@@ -175,8 +175,10 @@ and compile_instr env (stmt : Ast.stmt) =
       bne BranchY
       BranchX:
       stmt1
+      bal BranchEnd
       BranchY:
       stmt2      
+      BranchEnd:
       *)
   | Sassign ({id}, expr) ->
     compile_expr env expr; (* This stores the "expr" in r0 *)
@@ -194,7 +196,7 @@ and compile_instr env (stmt : Ast.stmt) =
     in
     Arm7.store r0 offset
   | Sblock block ->
-    List.iter (compile_instr env) block
+    List.iter (compile_stmt env) block
   | Swhile (expr, stmt) ->
     compile_expr env expr;
     Arm7.cmps r0 "#1"; (* "1" should be stored in r0 if the expr is true *)
@@ -203,13 +205,11 @@ and compile_instr env (stmt : Ast.stmt) =
     incr branchCount;
 
     Arm7.newLabel branchTrue;
-    compile_instr env stmt;
+    compile_stmt env stmt;
     (* Check the expr condition again, and loop if true *)
     compile_expr env expr;
     Arm7.cmps r0 "#1";
     Arm7.branchCC "eq" branchTrue
-  | _ -> ()
-
     (* The arm code of the while-loop should look like:
     expr
     cmps r0, #1
@@ -220,7 +220,9 @@ and compile_instr env (stmt : Ast.stmt) =
     cmps r0, #1
     beq branchX
     *)
- (* Compiling function calls *)
+  | _ -> ()
+
+(* Compiling function calls *)
 and compile_function_call env fName args =
   let offSets = Hashtbl.find functions fName in
   List.iteri (fun i arg ->
@@ -229,7 +231,6 @@ and compile_function_call env fName args =
     ) args;
 
   Arm7.branchLink fName   
-
 
 (* Compile function bodies separately *)
 let compile_function_body env (func : Ast.def) =
@@ -253,7 +254,7 @@ let compile_function_body env (func : Ast.def) =
   Arm7.push "lr";
 
   (* Compile the function body with updated environment*)
-  compile_instr env funcBody;
+  compile_stmt env funcBody;
   
   (* After compiling the body, we now remove the function arguments from the main environment using their string ID. *)
   List.iter (fun arg -> 
@@ -293,7 +294,7 @@ let codegen_file ((defs, main_stmt) : Ast.file) output_file =
     Function def (with input parameters): *)
   List.iter (fun def -> compile_function_def def) defs;
   (* Main statements (includes function calls): *)
-  compile_instr main_env main_stmt;
+  compile_stmt main_env main_stmt;
   (* End program by going to "EndProg" loop *)
   Arm7.branch "EndProg";
   (* Function bodies (they can now access global variables created by the main statements): *)
