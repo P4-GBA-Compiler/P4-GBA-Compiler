@@ -27,11 +27,16 @@ ocamlc -c ast.ml
 ocamllex lexer.mll
 menhir --infer --explain parser.mly
 ocamlc -o compiler.exe ast.ml parser.mli parser.ml lexer.ml gba_stdlib.ml arm7.ml codegen.ml main.ml
+# If using Mac you name the compiler file 'compiler.dmg' by calling this commando instead:
+ocamlc -o compiler.dmg ast.ml parser.mli parser.ml lexer.ml gba_stdlib.ml arm7.ml codegen.ml main.ml
 ```
 
 If everything worked you should now have:
 
 - `compiler.exe` (our compiler executable)
+
+For Mac:
+- `compiler.dmg`
 
 ---
 
