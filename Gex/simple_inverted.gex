@@ -14,8 +14,8 @@ def Turn(symbol):
             MoveUp()
 
         elif InputA():
-            if Draw(symbol):  # Only set to False if Draw returns True (1)
-                selecting = False
+            Draw(symbol)  # Only set to False if Draw returns True (1)
+            selecting = False
 
     if symbol == "X":
         Turn("O")
